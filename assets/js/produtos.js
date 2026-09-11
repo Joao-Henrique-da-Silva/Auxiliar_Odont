@@ -35,12 +35,8 @@ if (user) {
             });
         });
 
-        await carregarProdutos();
-
-        const acao = params.get("acao");
-        if (acao === "entrada" && podeEntrada) new bootstrap.Modal(document.getElementById("modalEntrada")).show();
-        if (acao === "saida" && podeSaida) new bootstrap.Modal(document.getElementById("modalSaida")).show();
-
+        // Botões registrados ANTES do carregamento: se listProdutos() falhar (rede,
+        // RLS, schema desatualizado), a tela não deve travar sem nenhum botão responder.
         document.getElementById("btnNovoProduto").addEventListener("click", abrirModalNovoProduto);
         document.getElementById("formProduto").addEventListener("submit", salvarProduto);
         document.getElementById("formEntrada").addEventListener("submit", salvarEntrada);
@@ -55,6 +51,19 @@ if (user) {
         });
         document.getElementById("btnScanEntrada")?.addEventListener("click", () => escanearParaSelect("entradaProdutoId", "entradaQuantidade"));
         document.getElementById("btnScanSaida")?.addEventListener("click", () => escanearParaSelect("saidaProdutoId", "saidaQuantidade"));
+
+        try {
+            await carregarProdutos();
+        } catch (err) {
+            console.error(err);
+            document.getElementById("produtosTableBody").innerHTML =
+                `<tr><td colspan="9" class="text-center text-danger py-4">Erro ao carregar produtos: ${err.message}</td></tr>`;
+            return;
+        }
+
+        const acao = params.get("acao");
+        if (acao === "entrada" && podeEntrada) new bootstrap.Modal(document.getElementById("modalEntrada")).show();
+        if (acao === "saida" && podeSaida) new bootstrap.Modal(document.getElementById("modalSaida")).show();
     }
 
     async function escanearParaSelect(selectId, focusId) {

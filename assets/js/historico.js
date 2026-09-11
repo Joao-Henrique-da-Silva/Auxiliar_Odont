@@ -12,10 +12,18 @@ if (user) {
     let saidasCache = [];
 
     async function init() {
-        [historicoCache, saidasCache] = await Promise.all([listHistorico(), listSaidas()]);
+        document.getElementById("btnExportCsv").addEventListener("click", exportarCsv);
+        try {
+            [historicoCache, saidasCache] = await Promise.all([listHistorico(), listSaidas()]);
+        } catch (err) {
+            console.error(err);
+            const msg = `<tr><td colspan="5" class="text-center text-danger py-4">Erro ao carregar: ${err.message}</td></tr>`;
+            document.getElementById("historicoTableBody").innerHTML = msg;
+            document.getElementById("saidasTableBody").innerHTML = msg;
+            return;
+        }
         renderHistorico();
         renderSaidas();
-        document.getElementById("btnExportCsv").addEventListener("click", exportarCsv);
     }
 
     await init();

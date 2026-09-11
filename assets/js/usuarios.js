@@ -11,9 +11,18 @@ import { roleLabel, roleBadgeClass } from "./permissions.js";
 const user = await requireAdmin();
 if (user) {
     renderShell("usuarios.html", user);
-    await carregarUsuarios();
+    // Os botões são registrados ANTES do carregamento da lista: se listUsuarios()
+    // falhar (rede, RLS, schema desatualizado), a página não deve travar sem os
+    // botões funcionarem — o erro real aparece em #msgContainer.
     document.getElementById("btnNovoUsuario").addEventListener("click", abrirModalNovoUsuario);
     document.getElementById("formUsuario").addEventListener("submit", salvarUsuario);
+    try {
+        await carregarUsuarios();
+    } catch (err) {
+        console.error(err);
+        document.getElementById("msgContainer").innerHTML =
+            `<div class="alert alert-danger">Erro ao carregar usuários: ${err.message}</div>`;
+    }
 }
 
 let usuariosCache = [];

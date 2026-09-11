@@ -8,7 +8,13 @@ const user = await requireAuth();
 if (user) {
     renderShell("dashboard.html", user);
     document.getElementById("welcomeBadge").textContent = `Bem-vindo, ${user.nome}`;
-    await carregarDashboard();
+    try {
+        await carregarDashboard();
+    } catch (err) {
+        console.error(err);
+        document.getElementById("alertsContainer").innerHTML =
+            `<div class="alert alert-danger">Erro ao carregar o dashboard: ${err.message}</div>`;
+    }
 }
 
 const PALETA = ["#2563eb", "#16a34a", "#d97706", "#dc2626", "#7c3aed", "#0891b2", "#db2777", "#65a30d"];

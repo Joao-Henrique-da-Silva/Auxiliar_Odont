@@ -16,13 +16,20 @@ let produtosCache = [];
 let carrinho = []; // { produtoId, nome, preco, quantidade, estoqueDisponivel }
 
 async function init() {
-    produtosCache = await listProdutos();
-    preencherSelect();
-    renderCarrinho();
-
     document.getElementById("btnAdicionarCarrinho").addEventListener("click", adicionarAoCarrinho);
     document.getElementById("btnScanCaixa").addEventListener("click", scanEAdicionar);
     document.getElementById("btnFinalizarVenda").addEventListener("click", finalizarVenda);
+
+    try {
+        produtosCache = await listProdutos();
+    } catch (err) {
+        console.error(err);
+        document.getElementById("caixaProdutoId").innerHTML = `<option value="">Erro ao carregar produtos</option>`;
+        alert("Erro ao carregar produtos: " + err.message);
+        return;
+    }
+    preencherSelect();
+    renderCarrinho();
 }
 
 function preencherSelect() {
