@@ -81,10 +81,14 @@ if (user) {
         renderTabela();
     }
 
+    function estoqueMinimo(p) {
+        return p.estoque_minimo === null || p.estoque_minimo === undefined ? 5 : Number(p.estoque_minimo);
+    }
+
     function renderStats() {
         const vencidos = produtosCache.filter(p => daysUntil(p.validade) < 0);
         const prestes = produtosCache.filter(p => { const d = daysUntil(p.validade); return d >= 0 && d <= 7; });
-        const baixo = produtosCache.filter(p => Number(p.quantidade) <= 5);
+        const baixo = produtosCache.filter(p => Number(p.quantidade) <= estoqueMinimo(p));
 
         document.getElementById("statTotal").textContent = produtosCache.length;
         document.getElementById("statVencidos").textContent = vencidos.length;
@@ -97,7 +101,7 @@ if (user) {
             const dias = daysUntil(p.validade);
             if (filtroAtual === "vencidos") return dias < 0;
             if (filtroAtual === "prestes") return dias >= 0 && dias <= 7;
-            if (filtroAtual === "baixo") return Number(p.quantidade) <= 5;
+            if (filtroAtual === "baixo") return Number(p.quantidade) <= estoqueMinimo(p);
             return true;
         });
     }
@@ -108,17 +112,20 @@ if (user) {
 
         tbody.innerHTML = lista.map(p => {
             const dias = daysUntil(p.validade);
+            const baixo = Number(p.quantidade) <= estoqueMinimo(p);
             let statusBadge = `<span class="badge bg-success">OK</span>`;
             if (dias < 0) statusBadge = `<span class="badge bg-danger">Vencido</span>`;
             else if (dias <= 7) statusBadge = `<span class="badge bg-warning text-dark">Vencendo</span>`;
-            if (Number(p.quantidade) <= 5) statusBadge += ` <span class="badge bg-info text-dark">Baixo</span>`;
+            if (baixo) statusBadge += ` <span class="badge bg-info text-dark">Baixo</span>`;
 
             return `
     <tr>
-      <td>${escapeHtml(p.nome)}</td>
-      <td>${escapeHtml(p.descricao || "")}</td>
+      <td>${escapeHtml(p.nome)}${p.descricao ? `<br><small class="text-muted">${escapeHtml(p.descricao)}</small>` : ""}</td>
+      <td>${escapeHtml(p.categoria || "-")}</td>
+      <td>${escapeHtml(p.unidade || "-")}</td>
       <td>R$ ${formatMoneyBR(p.preco)}</td>
-      <td class="${Number(p.quantidade) <= 5 ? "low-stock" : ""}">${p.quantidade}</td>
+      <td class="${baixo ? "low-stock" : ""}">${p.quantidade}</td>
+      <td>${estoqueMinimo(p)}</td>
       <td>${formatDateBR(p.validade)}</td>
       <td>${statusBadge}</td>
       <td>
@@ -127,7 +134,7 @@ if (user) {
         <button class="btn btn-sm btn-danger btn-deletar" data-id="${p.id}"><i class="bi bi-trash"></i></button>` : "-"}
       </td>
     </tr>`;
-        }).join("") || `<tr><td colspan="7" class="text-center text-muted py-4">Nenhum produto encontrado.</td></tr>`;
+        }).join("") || `<tr><td colspan="9" class="text-center text-muted py-4">Nenhum produto encontrado.</td></tr>`;
 
         tbody.querySelectorAll(".btn-editar").forEach(btn =>
             btn.addEventListener("click", () => abrirModalEditarProduto(btn.dataset.id)));
@@ -149,8 +156,11 @@ if (user) {
         document.getElementById("produtoId").value = p.id;
         document.getElementById("produtoNome").value = p.nome || "";
         document.getElementById("produtoDescricao").value = p.descricao || "";
+        document.getElementById("produtoCategoria").value = p.categoria || "";
+        document.getElementById("produtoUnidade").value = p.unidade || "";
         document.getElementById("produtoPreco").value = p.preco || 0;
         document.getElementById("produtoQuantidade").value = p.quantidade || 0;
+        document.getElementById("produtoEstoqueMinimo").value = estoqueMinimo(p);
         document.getElementById("produtoValidade").value = toDateInputValue(p.validade);
         document.getElementById("produtoCodigoBarras").value = p.codigo_barras || "";
         new bootstrap.Modal(document.getElementById("modalProduto")).show();
@@ -163,9 +173,12 @@ if (user) {
         const data = {
             nome: document.getElementById("produtoNome").value.trim(),
             descricao: document.getElementById("produtoDescricao").value.trim(),
+            categoria: document.getElementById("produtoCategoria").value.trim() || null,
+            unidade: document.getElementById("produtoUnidade").value.trim() || null,
             preco: parseFloat(document.getElementById("produtoPreco").value) || 0,
             quantidade: parseInt(document.getElementById("produtoQuantidade").value) || 0,
-            validade: document.getElementById("produtoValidade").value,
+            estoque_minimo: parseInt(document.getElementById("produtoEstoqueMinimo").value) || 0,
+            validade: document.getElementById("produtoValidade").value || null,
             codigo_barras: codigoBarras || null
         };
 
@@ -229,8 +242,13 @@ if (user) {
     }
 
     function exportarCsv() {
-        const rows = produtosCache.map(p => [p.id, p.nome, p.descricao || "", p.preco, p.quantidade, toDateInputValue(p.validade)]);
-        downloadCsv("produtos_export.csv", ["id", "nome", "descricao", "preco", "quantidade", "validade"], rows);
+        const rows = produtosCache.map(p => [
+            p.id, p.nome, p.descricao || "", p.categoria || "", p.unidade || "",
+            p.preco, p.quantidade, estoqueMinimo(p), toDateInputValue(p.validade), p.codigo_barras || ""
+        ]);
+        downloadCsv("produtos_export.csv",
+            ["id", "nome", "descricao", "categoria", "unidade", "preco", "quantidade", "estoque_minimo", "validade", "codigo_barras"],
+            rows);
     }
 }
 

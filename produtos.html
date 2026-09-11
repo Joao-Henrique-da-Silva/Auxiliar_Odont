@@ -122,9 +122,11 @@
                     <thead>
                         <tr>
                             <th>Nome</th>
-                            <th>Descrição</th>
+                            <th>Categoria</th>
+                            <th>Unidade</th>
                             <th>Preço</th>
                             <th>Quantidade</th>
+                            <th>Mín.</th>
                             <th>Validade</th>
                             <th>Status</th>
                             <th width="260">Ações</th>
@@ -154,12 +156,27 @@
                                 id="produtoNome" required></div>
                         <div class="mb-3"><label class="form-label">Descrição</label><textarea class="form-control"
                                 id="produtoDescricao"></textarea></div>
+                        <div class="row">
+                            <div class="col-6 mb-3"><label class="form-label">Categoria</label><input class="form-control"
+                                    id="produtoCategoria" placeholder="Ex.: Dentística"></div>
+                            <div class="col-6 mb-3"><label class="form-label">Unidade</label><input class="form-control"
+                                    id="produtoUnidade" placeholder="Ex.: Caixa, Frasco, Unidade"></div>
+                        </div>
                         <div class="mb-3"><label class="form-label">Preço</label><input class="form-control"
                                 type="number" step="0.01" id="produtoPreco" required></div>
-                        <div class="mb-3"><label class="form-label">Quantidade</label><input class="form-control"
-                                type="number" id="produtoQuantidade" required></div>
+                        <div class="row">
+                            <div class="col-6 mb-3"><label class="form-label">Quantidade</label><input class="form-control"
+                                    type="number" id="produtoQuantidade" required></div>
+                            <div class="col-6 mb-3"><label class="form-label">Estoque mínimo</label><input
+                                    class="form-control" type="number" id="produtoEstoqueMinimo" min="0" value="5">
+                                <small class="text-muted">Abaixo disso o produto some no filtro "Baixo estoque".</small>
+                            </div>
+                        </div>
                         <div class="mb-3"><label class="form-label">Validade</label><input class="form-control"
-                                type="date" id="produtoValidade" required></div>
+                                type="date" id="produtoValidade">
+                            <small class="text-muted">Opcional — deixe em branco para itens sem validade controlada
+                                (ex.: instrumental).</small>
+                        </div>
                         <div class="mb-3">
                             <label class="form-label">Código de barras</label>
                             <div class="input-group">

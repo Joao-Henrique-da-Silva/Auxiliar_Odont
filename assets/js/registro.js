@@ -19,20 +19,23 @@ form.addEventListener("submit", async (e) => {
     const senha = document.getElementById("senha").value;
 
     try {
-        const totalUsuarios = await countUsuarios();
-        const role = totalUsuarios === 0 ? "admin" : "vendedor";
-
-        // Guarda nome/perfil nos metadados do Auth: se "Confirm email" estiver ativo,
-        // o perfil na tabela usuarios só pode ser criado depois (sem sessão agora, o insert
-        // seria bloqueado pela política de segurança). O login.js cria o perfil nesse caso.
+        // A role só pode ser decidida com segurança DEPOIS que o Supabase autentica
+        // o usuário: antes do signUp não existe sessão, e a política de segurança (RLS)
+        // não permite que um visitante anônimo veja a tabela "usuarios" — contar antes
+        // sempre retornava 0 e fazia todo mundo virar "admin" nesta tela. Guarda só o
+        // nome nos metadados do Auth; se "Confirm email" estiver ativo, o perfil na
+        // tabela usuarios só pode ser criado depois (sem sessão agora, o insert seria
+        // bloqueado pela política de segurança) — o login.js cria o perfil nesse caso.
         const { data, error } = await supabase.auth.signUp({
             email,
             password: senha,
-            options: { data: { nome, role } }
+            options: { data: { nome } }
         });
         if (error) throw error;
 
         if (data.session) {
+            const totalUsuarios = await countUsuarios();
+            const role = totalUsuarios === 0 ? "admin" : "vendedor";
             await createUsuarioProfile(data.user.id, { nome, email, role, ativo: true });
             window.location.href = "index.html";
         } else {

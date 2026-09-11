@@ -100,6 +100,12 @@ async function criarUsuarioSemDeslogarAdmin(nome, email, senha, role, ativo) {
     const { data, error } = await secondaryClient.auth.signUp({ email, password: senha });
     if (error) throw error;
     if (!data.user) throw new Error("Não foi possível criar o usuário (verifique a confirmação de email nas configurações do Supabase Auth).");
+    // O Supabase não retorna erro para email já cadastrado (por segurança, evita
+    // que alguém descubra emails existentes); ele responde com um usuário "fantasma"
+    // sem identidades associadas. É assim que detectamos a duplicidade aqui.
+    if (data.user.identities && data.user.identities.length === 0) {
+        throw new Error("Este email já está cadastrado.");
+    }
     await createUsuarioProfile(data.user.id, { nome, email, role, ativo });
 }
 
