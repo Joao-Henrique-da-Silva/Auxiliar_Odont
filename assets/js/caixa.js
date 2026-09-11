@@ -6,14 +6,14 @@ import { listProdutos, getProdutoByCodigoBarras, registrarSaida } from "./data.j
 import { formatMoneyBR, escapeHtml } from "./utils.js";
 import { abrirScanner } from "./scanner.js";
 
+let produtosCache = [];
+let carrinho = []; // { produtoId, nome, preco, quantidade, estoqueDisponivel }
+
 const user = await requirePermission("saida");
 if (user) {
     renderShell("caixa.html", user);
     await init();
 }
-
-let produtosCache = [];
-let carrinho = []; // { produtoId, nome, preco, quantidade, estoqueDisponivel }
 
 async function init() {
     document.getElementById("btnAdicionarCarrinho").addEventListener("click", adicionarAoCarrinho);

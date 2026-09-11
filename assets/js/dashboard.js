@@ -4,6 +4,15 @@ import { renderShell } from "./layout.js";
 import { listProdutos } from "./data.js";
 import { formatDateBR, formatMoneyBR, daysUntil, escapeHtml } from "./utils.js";
 
+// Estas constantes precisam existir ANTES de carregarDashboard() ser chamada
+// (ela roda no bloco abaixo, ainda durante o carregamento do módulo).
+const PALETA = ["#2563eb", "#16a34a", "#d97706", "#dc2626", "#7c3aed", "#0891b2", "#db2777", "#65a30d"];
+const isDark = () => document.body.classList.contains("theme-dark");
+const corTexto = () => isDark() ? "#cbd5e1" : "#475569";
+const corGrade = () => isDark() ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)";
+
+Chart.defaults.font.family = "'Segoe UI', sans-serif";
+
 const user = await requireAuth();
 if (user) {
     renderShell("dashboard.html", user);
@@ -16,13 +25,6 @@ if (user) {
             `<div class="alert alert-danger">Erro ao carregar o dashboard: ${err.message}</div>`;
     }
 }
-
-const PALETA = ["#2563eb", "#16a34a", "#d97706", "#dc2626", "#7c3aed", "#0891b2", "#db2777", "#65a30d"];
-const isDark = () => document.body.classList.contains("theme-dark");
-const corTexto = () => isDark() ? "#cbd5e1" : "#475569";
-const corGrade = () => isDark() ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)";
-
-Chart.defaults.font.family = "'Segoe UI', sans-serif";
 
 async function carregarDashboard() {
     const produtos = await listProdutos();

@@ -8,6 +8,8 @@ import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./supabase-config.js";
 import { roleLabel, roleBadgeClass } from "./permissions.js";
 
+let usuariosCache = [];
+
 const user = await requireAdmin();
 if (user) {
     renderShell("usuarios.html", user);
@@ -24,8 +26,6 @@ if (user) {
             `<div class="alert alert-danger">Erro ao carregar usuários: ${err.message}</div>`;
     }
 }
-
-let usuariosCache = [];
 
 async function carregarUsuarios() {
     usuariosCache = await listUsuarios();
