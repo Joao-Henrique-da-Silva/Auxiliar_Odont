@@ -1,0 +1,12 @@
+# Backups locais
+*.bak
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Dependências
+node_modules/
+
+# Logs
+*.log

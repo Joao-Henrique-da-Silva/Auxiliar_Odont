@@ -37,7 +37,7 @@ form.addEventListener("submit", async (e) => {
             const totalUsuarios = await countUsuarios();
             const role = totalUsuarios === 0 ? "admin" : "vendedor";
             await createUsuarioProfile(data.user.id, { nome, email, role, ativo: true });
-            window.location.href = "index.html";
+            window.location.href = "login.html";
         } else {
             errorAlert.classList.remove("alert-danger", "d-none");
             errorAlert.classList.add("alert-success");

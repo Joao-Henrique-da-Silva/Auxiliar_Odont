@@ -11,6 +11,7 @@ import { roleLabel, roleBadgeClass } from "./permissions.js";
 let usuariosCache = [];
 
 const user = await requireAdmin();
+
 if (user) {
     renderShell("usuarios.html", user);
     // Os botões são registrados ANTES do carregamento da lista: se listUsuarios()
@@ -99,23 +100,66 @@ async function salvarUsuario(e) {
 }
 
 /**
- * Cria o novo usuário em um client Supabase secundário (sem persistir sessão) para
- * não substituir a sessão do admin logado (limitação do SDK client-side sem Service Role Key).
+ * Cria o novo usuário no Supabase Auth usando um client secundário
+ * (sem persistir sessão) para não substituir a sessão do admin logado.
+ *
+ * O perfil em public.usuarios é criado aqui SOMENTE se a confirmação de email
+ * estiver desativada (signUp retorna session). Caso contrário, o auth.js cria
+ * automaticamente no primeiro login do usuário, usando os user_metadata.
+ *
+ * Isso contorna a limitação de FK quando a confirmação de email está ativa:
+ * enquanto o usuário não confirma, ele não existe de fato em auth.users,
+ * então não dá para inserir o perfil em public.usuarios.
  */
 async function criarUsuarioSemDeslogarAdmin(nome, email, senha, role, ativo) {
     const secondaryClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
         auth: { persistSession: false, autoRefreshToken: false }
     });
-    const { data, error } = await secondaryClient.auth.signUp({ email, password: senha });
-    if (error) throw error;
-    if (!data.user) throw new Error("Não foi possível criar o usuário (verifique a confirmação de email nas configurações do Supabase Auth).");
+
+    const { data, error } = await secondaryClient.auth.signUp({
+        email,
+        password: senha,
+        options: {
+            data: { nome, role, ativo }  // metadados usados no 1º login pelo auth.js
+        }
+    });
+
+    if (error) {
+        if (error.status === 422 || /already registered|already exists/i.test(error.message)) {
+            throw new Error(`O email "${email}" já está cadastrado.`);
+        }
+        throw new Error(`Falha ao criar usuário: ${error.message}`);
+    }
+
+    if (!data.user) {
+        throw new Error("Não foi possível criar o usuário (verifique a configuração de email do Supabase Auth).");
+    }
+
     // O Supabase não retorna erro para email já cadastrado (por segurança, evita
     // que alguém descubra emails existentes); ele responde com um usuário "fantasma"
-    // sem identidades associadas. É assim que detectamos a duplicidade aqui.
+    // sem identidades associadas. É assim que detectamos a duplicidade.
     if (data.user.identities && data.user.identities.length === 0) {
         throw new Error("Este email já está cadastrado.");
     }
-    await createUsuarioProfile(data.user.id, { nome, email, role, ativo });
+
+    // Se a confirmação de email estiver DESATIVADA, o Supabase retorna session
+    // e o usuário já existe em auth.users → criamos o perfil agora.
+    if (data.session) {
+        await createUsuarioProfile(data.user.id, { nome, email, role, ativo });
+        return;
+    }
+
+    // Se a confirmação de email estiver ATIVA, o usuário fica pendente até clicar
+    // no link. O perfil será criado automaticamente no primeiro login pelo auth.js
+    // (usando os metadados salvos em user_metadata).
+    alert(
+        `✅ Usuário "${nome}" criado!\n\n` +
+        `📧 Um e-mail de confirmação foi enviado para ${email}.\n\n` +
+        `⚠️ O perfil aparecerá na lista APÓS o usuário:\n` +
+        `1. Clicar no link de confirmação do e-mail\n` +
+        `2. Fazer o primeiro login\n\n` +
+        `Se o link expirar (1 hora), cadastre novamente.`
+    );
 }
 
 async function excluirUsuario(id) {
@@ -128,7 +172,7 @@ async function excluirUsuario(id) {
 async function resetarSenha(email) {
     try {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
-            redirectTo: window.location.origin + window.location.pathname.replace("usuarios.html", "index.html")
+            redirectTo: window.location.origin + window.location.pathname.replace("usuarios.html", "login.html")
         });
         if (error) throw error;
         alert("Email de redefinição de senha enviado para " + email);
@@ -136,4 +180,3 @@ async function resetarSenha(email) {
         alert("Erro ao enviar email: " + err.message);
     }
 }
-
